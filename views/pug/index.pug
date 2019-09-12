@@ -1,0 +1,11 @@
+html
+    head
+        include includes/head.pug
+    body
+        .container
+            .row.justify-content-center.align-items-center.h-100.p-5
+                .col-0
+                    h1(style='font-size: 100px;') Hello !{username}
+                    p(style='font-size: 20px;').p-2 This is simple node JS auth 
+                    form(action='/logout' method='POST').p-2
+                        button.btn-lg.bg-primary.text-white(type='submit') Leave from account

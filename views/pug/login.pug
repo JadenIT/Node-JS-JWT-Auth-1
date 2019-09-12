@@ -1,0 +1,25 @@
+html
+    head
+        include includes/head.pug
+    body.g
+        include includes/error.pug
+
+        .limiter
+            .container-login100
+                .wrap-login100
+                    .login100-form-title(style="background-image: url(images/bg-01.jpg);")
+                        .login100-form-title-1 Sign In
+
+                    form.login100-form(action='' method='POST').p-5
+                        .wrap-input100.validate-input.m-b-26
+                            input.input100(placeholder='Enter username' name='Username')
+                            span.focus-input100
+                        .wrap-input100.validate-input.m-b-18
+                            input.input100(placeholder='Enter password' name='Password')
+                            span.focus-input100
+                        if error
+                            +error(error)
+                        .container-login100-form-btn.mt-4
+                            button.login100-form-btn(type='submit') Login
+
+                        a.text-primary(href='register').mt-4 Don't have an account? Sign up!
