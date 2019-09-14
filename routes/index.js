@@ -1,19 +1,19 @@
 const router = require('express').Router()
 const UserController = require('../controllers/user')
-var cookie = require('cookie')
+const cookie = require('cookie')
 const clearErrors = require('./middlewares/cleanErrors')
-const isAuth = require('./middlewares/isAuth')
+const auth = require('./middlewares/auth')
+const jwt = require('jsonwebtoken')
+const cookies = require('./middlewares/cookies')
 
 router.route('/')
-    .get(isAuth, (req, res) => {
-        var cookies = cookie.parse(req.headers.cookie || '');
-        res.render('pug/index.pug', { username: cookies.username })
+    .get(auth, cookies, (req, res) => {
+        res.render('pug/index.pug', { username: req.user.Username })
     })
 
 router.route('/login')
-    .get(clearErrors, (req, res) => {
-        let cookies = cookie.parse(req.headers.cookie || '')
-        res.render('pug/login.pug', { error: cookies.loginError })
+    .get(clearErrors, cookies, (req, res) => {
+        res.render('pug/login.pug', { error: req.cookies.loginError })
     })
 
     .post((req, res) => {
@@ -24,24 +24,22 @@ router.route('/login')
         }
         else {
             UserController.login(Username, Password, (result) => {
-                switch (result) {
-                    case true:
-                        res.setHeader('Set-Cookie', cookie.serialize('username', Username, { maxAge: 60 * 60 * 24 * 7 }))
-                        res.redirect('/')
-                        break
-                    case false:
-                        res.setHeader('Set-Cookie', cookie.serialize('loginError', 'Incorrect username or password'))
-                        res.redirect('/login')
-                        break
+                if (!result) {
+                    res.setHeader('Set-Cookie', cookie.serialize('loginError', 'Incorrect username or password'))
+                    res.redirect('/login')
+                }
+                else {
+                    const token = jwt.sign({ Username: Username }, 'Some key')
+                    res.setHeader('Set-Cookie', cookie.serialize('authToken', token, { maxAge: 60 * 60 * 24 * 7 }))
+                    res.redirect('/')
                 }
             })
         }
     })
 
 router.route('/register')
-    .get(clearErrors, (req, res) => {
-        let cookies = cookie.parse(req.headers.cookie || '')
-        res.render('pug/register.pug', { error: cookies.registerError })
+    .get(clearErrors, cookies, (req, res) => {
+        res.render('pug/register.pug', { error: req.cookies.registerError })
     })
 
     .post((req, res) => {
@@ -53,15 +51,13 @@ router.route('/register')
         else {
             if (Password == Password2) {
                 UserController.isNameFree(Username, (result) => {
-                    switch (result) {
-                        case true:
-                            UserController.saveUser(Username, Password)
-                            res.redirect('/login')
-                            break
-                        case false:
-                            res.setHeader('Set-Cookie', cookie.serialize('registerError', `Username ${Username} is taken`))
-                            res.redirect('/register')
-                            break
+                    if (!result) {
+                        res.setHeader('Set-Cookie', cookie.serialize('registerError', `Username ${Username} is taken`))
+                        res.redirect('/register')
+                    }
+                    else {
+                        UserController.saveUser(Username, Password)
+                        res.redirect('/login')
                     }
                 })
             }
@@ -74,7 +70,7 @@ router.route('/register')
 
 router.route('/logout')
     .post((req, res) => {
-        res.setHeader('Set-Cookie', cookie.serialize('username', '', { expires: new Date() }))
+        res.setHeader('Set-Cookie', cookie.serialize('authToken', '', { expires: new Date() }))
         res.redirect('/')
     })
 

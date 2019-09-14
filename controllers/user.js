@@ -3,7 +3,7 @@ const bcrypt = require('bcrypt')
 
 class UserController {
     static saveUser(username, password) {
-        bcrypt.hash(password, 10, function (err, hash) {
+        bcrypt.hash(password, 10, (err, hash) => {
             let userModelInstance = new userModel({ username: username, password: hash })
             userModelInstance.save((err, docs) => {
                 if (err) throw err
@@ -17,14 +17,10 @@ class UserController {
     }
     static login(username, password, cb) {
         userModel.findOne({ username: username }, (err, docs) => {
-            if (docs) {
-                bcrypt.compare(password, docs.password, function (err, res) {
-                    cb(res)
-                });
-            }
-            else {
-                cb(false)
-            }
+            if (!docs) return cb(false)
+            bcrypt.compare(password, docs.password, (err, res) => {
+                cb(res)
+            })
         })
     }
 }
